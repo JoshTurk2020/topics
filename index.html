@@ -2,7 +2,7 @@
 <html>
 <head>
   <title>Text Topic Analysis</title>
-  <script src="https://unpkg.com/natural"></script>
+  <script src="https://unpkg.com/compromise"></script>
   <script>
     function analyzeTopic() {
       const text = document.getElementById('textInput').value;
@@ -12,9 +12,9 @@
       sentences.forEach((sentence, index) => {
         const words = sentence.toLowerCase().match(/\b\w+\b/g);
         if (words) {
-          const taggedWords = new natural.BrillPOSTagger().tag(words);
-          taggedWords.forEach(([word, tag]) => {
-            if (word.length > 3 && (tag.startsWith('NN') || tag.startsWith('JJ'))) {
+          const taggedWords = compromise(sentence).tags();
+          words.forEach((word, i) => {
+            if (word.length > 3 && (taggedWords[i].has('#Noun') || taggedWords[i].has('#Adjective'))) {
               if (topics[word]) {
                 topics[word].count++;
                 topics[word].positions.push(index);
