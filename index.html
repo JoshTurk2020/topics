@@ -6,42 +6,59 @@
   <script>
     function analyzeTopic() {
       const text = document.getElementById('textInput').value;
-      const sentences = text.split(/[.!?]/);
+      if (!text.trim()) {
+        alert('Please enter some text.');
+        return;
+      }
+      
+      const doc = compromise(text);
+      const sentences = doc.sentences().out('array');
       const topics = {};
 
       sentences.forEach((sentence, index) => {
-        const words = sentence.toLowerCase().match(/\b\w+\b/g);
-        if (words) {
-          const taggedWords = compromise(sentence).tags();
-          words.forEach((word, i) => {
-            if (word.length > 3 && (taggedWords[i].has('#Noun') || taggedWords[i].has('#Adjective'))) {
-              if (topics[word]) {
-                topics[word].count++;
-                topics[word].positions.push(index);
-              } else {
-                topics[word] = {
-                  count: 1,
-                  positions: [index]
-                };
-              }
+        const words = compromise(sentence).words().out('array');
+        words.forEach(word => {
+          if (word.length > 3) {
+            if (topics[word]) {
+              topics[word].count++;
+              topics[word].positions.push(index);
+            } else {
+              topics[word] = {
+                count: 1,
+                positions: [index],
+                importance: 0
+              };
             }
-          });
-        }
+          }
+        });
       });
 
-      const orderedTopics = Object.keys(topics);
+      // Calculate importance scores for each topic
+      Object.keys(topics).forEach(word => {
+        const topic = topics[word];
+        const pos = compromise(word).out('tags')[0];
+        let importance = 0;
+
+        // Adjust POS tagging handling
+        if (pos.includes('Noun') || pos.includes('Proper')) {
+          importance += 2;
+        } else if (pos.includes('Verb') || pos.includes('Adjective')) {
+          importance += 1;
+        }
+
+        importance += topic.count;
+        importance += topic.positions.length > 1 ? 1 : 0;
+
+        topic.importance = importance;
+      });
+
+      // Order and prioritize topics
+      const orderedTopics = Object.keys(topics).sort();
       const prioritizedTopics = Object.entries(topics)
-        .sort((a, b) => {
-          const countDiff = b[1].count - a[1].count;
-          if (countDiff !== 0) {
-            return countDiff;
-          }
-          const avgPosA = a[1].positions.reduce((sum, pos) => sum + pos, 0) / a[1].positions.length;
-          const avgPosB = b[1].positions.reduce((sum, pos) => sum + pos, 0) / b[1].positions.length;
-          return avgPosA - avgPosB;
-        })
+        .sort((a, b) => b[1].importance - a[1].importance)
         .map(entry => entry[0]);
 
+      // Display results
       document.getElementById('orderedTopics').innerHTML = orderedTopics.map(topic => `<li>${topic}</li>`).join('');
       document.getElementById('prioritizedTopics').innerHTML = prioritizedTopics.map(topic => `<li>${topic}</li>`).join('');
     }
