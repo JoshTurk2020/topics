@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Text Topic Analysis</title>
+  <script>
+    function analyzeTopic() {
+      const text = document.getElementById('textInput').value;
+      const sentences = text.split(/[.!?]/);
+      const topics = {};
+
+      sentences.forEach((sentence, index) => {
+        const words = sentence.toLowerCase().match(/\b\w+\b/g);
+        if (words) {
+          words.forEach(word => {
+            if (word.length > 3) {
+              if (topics[word]) {
+                topics[word].count++;
+                topics[word].positions.push(index);
+              } else {
+                topics[word] = {
+                  count: 1,
+                  positions: [index]
+                };
+              }
+            }
+          });
+        }
+      });
+
+      const orderedTopics = Object.keys(topics);
+      const prioritizedTopics = Object.entries(topics)
+        .sort((a, b) => {
+          const countDiff = b[1].count - a[1].count;
+          if (countDiff !== 0) {
+            return countDiff;
+          }
+          const avgPosA = a[1].positions.reduce((sum, pos) => sum + pos, 0) / a[1].positions.length;
+          const avgPosB = b[1].positions.reduce((sum, pos) => sum + pos, 0) / b[1].positions.length;
+          return avgPosA - avgPosB;
+        })
+        .map(entry => entry[0]);
+
+      document.getElementById('orderedTopics').innerHTML = orderedTopics.map(topic => `<li>${topic}</li>`).join('');
+      document.getElementById('prioritizedTopics').innerHTML = prioritizedTopics.map(topic => `<li>${topic}</li>`).join('');
+    }
+  </script>
+</head>
+<body>
+  <h1>Text Topic Analysis</h1>
+  <textarea id="textInput" rows="10" cols="50"></textarea><br>
+  <button onclick="analyzeTopic()">Analyze Topics</button>
+  <h2>Ordered Topics</h2>
+  <ul id="orderedTopics"></ul>
+  <h2>Prioritized Topics</h2>
+  <ul id="prioritizedTopics"></ul>
+</body>
+</html>
